@@ -1,3 +1,4 @@
+import os
 import chromadb
 from chromadb.config import Settings
 from openai import OpenAI
@@ -9,7 +10,17 @@ class FinancialSituationMemory:
             self.embedding = "nomic-embed-text"
         else:
             self.embedding = "text-embedding-3-small"
-        self.client = OpenAI(base_url=config["backend_url"])
+        # For embeddings, we always need to use OpenAI's API
+        # The LLM provider choice only affects the main LLM, not embeddings
+        api_key = config.get("openai_api_key") or os.getenv("OPENAI_API_KEY")
+        
+        # Use OpenAI's base URL for embeddings, not the LLM provider's URL
+        embedding_base_url = "https://api.openai.com/v1"
+            
+        self.client = OpenAI(
+            base_url=embedding_base_url,
+            api_key=api_key
+        )
         self.chroma_client = chromadb.Client(Settings(allow_reset=True))
         self.situation_collection = self.chroma_client.create_collection(name=name)
 
